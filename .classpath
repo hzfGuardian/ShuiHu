@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/ibxm.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/jinput.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/jnlp.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/jogg-0.0.7.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/jorbis-0.0.15.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/lwjgl_util_applet.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/lwjgl_util.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/lwjgl.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/natives-linux.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/natives-mac.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/natives-windows.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/slick-examples.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/slick.jar">
+		<attributes>
+			<attribute name="org.eclipse.jdt.launching.CLASSPATH_ATTR_LIBRARY_PATH_ENTRY" value="/Users/huangzf/Downloads/slick"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="/Users/huangzf/Downloads/slick/lib/tinylinepp.jar"/>
+	<classpathentry kind="lib" path="/Users/huangzf/Documents/Java JARS/jdom-2.0.6/jdom-2.0.6.jar"/>
+	<classpathentry kind="output" path="bin"/>
+</classpath>
