@@ -1,6 +1,9 @@
 
 import java.io.File;
 
+import org.newdawn.slick.Image;
+import org.newdawn.slick.SlickException;
+
 
 //场景管理器，继承角色管理器，含有游戏角色
 
@@ -16,6 +19,18 @@ public class SceneManager extends CharacterManager {
 	//当前显示场景，屏幕左上角开始
 	private int display_x = 0, display_y = 0;
 	
+	//主角的金钱条和士兵条
+	private Image money_bar = null, soldier_bar = null;
+	
+	private Image money_num = null, soldier_num = null;
+	
+	//当前领地归属者
+	private Image[] owner_map = new Image[4];
+	
+	private ChooseBattle choose_battle = new ChooseBattle();
+	
+	
+	
 	public SceneManager() {
 		for (int i = 0; i < SCENE_WIDTH; i++) 
 		{
@@ -23,22 +38,38 @@ public class SceneManager extends CharacterManager {
 			{
 				switch (World.scenery[i][j]) {
 				case "city":
-					areas[i][j] = new Areas(Areas.SceneryType.CITY, "city");
+					areas[i][j] = new Areas(Areas.SceneryType.CITY, 5);
 					break;
 				case "simple":
-					areas[i][j] = new Areas(Areas.SceneryType.CITY, "simple");
+					areas[i][j] = new Areas(Areas.SceneryType.CITY, 7);
 					break;
 				case "shop":
-					areas[i][j] = new Areas(Areas.SceneryType.CITY, "simple");
+					areas[i][j] = new Areas(Areas.SceneryType.CITY, 2);
 					break;
 				case "soldier":
-					areas[i][j] = new Areas(Areas.SceneryType.CITY, "simple");
+					areas[i][j] = new Areas(Areas.SceneryType.CITY, 3);
 					break;
 				case "island":
-					areas[i][j] = new Areas(Areas.SceneryType.CITY, "simple");
+					areas[i][j] = new Areas(Areas.SceneryType.CITY, 4);
 					break;
 				}
 			}
+		}
+		
+		try {
+			money_bar = new Image("res/money_bar.png");
+			soldier_bar = new Image("res/soldier_bar.png");
+			money_num = new Image("res/money_num.png");
+			soldier_num = new Image("res/soldier_num.png");
+			
+			owner_map[0] = new Image("res/song_flag.png");
+			owner_map[1] = new Image("res/lin_flag.png");
+			owner_map[2] = new Image("res/hu_flag.png");
+			owner_map[3] = new Image("res/lu_flag.png");
+			
+		} catch (SlickException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 	
@@ -81,29 +112,32 @@ public class SceneManager extends CharacterManager {
 		return false;
 	}
 	
-	
+	//主角移动
+	public void moveMainCharacter(int step_len) {
+		main_game_character.move(step_len);
+	}
 	
 	//场景内角色随机移动
 	public void randomMoveCharacter() {	
 		int step_len = 2;
-		for (GameCharacter gameCharacter : character_list) {
+		for (GameCharacter gameCharacter : leader) {
 			//System.out.println("in scene thread");
 			//
 			gameCharacter.subStep();
 			//根据状态行走
 			switch (gameCharacter.getMoveState()) {
 			case RIGHT:
-				gameCharacter.moveDoubleRight(step_len);
+				gameCharacter.moveRight(step_len);
 				if (intersects(gameCharacter)) {
-					gameCharacter.moveDoubleLeft(step_len);
+					gameCharacter.moveLeft(step_len);
 					gameCharacter.setMoveState(GameCharacter.MoveState.LEFT);
 					gameCharacter.subStep();
 				}
 				break;
 			case LEFT:
-				gameCharacter.moveDoubleLeft(step_len);
+				gameCharacter.moveLeft(step_len);
 				if (intersects(gameCharacter)) {
-					gameCharacter.moveDoubleRight(step_len);
+					gameCharacter.moveRight(step_len);
 					gameCharacter.setMoveState(GameCharacter.MoveState.RIGHT);
 					gameCharacter.subStep();
 				}
@@ -149,7 +183,7 @@ public class SceneManager extends CharacterManager {
 		}
 		
 		//绘制角色
-		for (GameCharacter gameCharacter : other_list) {
+		for (GameCharacter gameCharacter : leader) {
 			if (gameCharacter.getI() == display_x && gameCharacter.getJ() == display_y) {
 				gameCharacter.draw();
 			}
@@ -158,10 +192,73 @@ public class SceneManager extends CharacterManager {
 		//绘制主角
 		main_game_character.draw();
 		
+		money_bar.draw();
+		soldier_bar.draw(money_bar.getWidth(), 0);
+		
+		int grid_1 = main_game_character.getMoney() / 100;
+		int grid_2 = main_game_character.getNum_of_soldiers() / 500;
+		
+		float startX = 113, startY = 75;
+		for (int i = 0; i < grid_1; i++) {
+			//startX += 1.7;
+			money_num.draw(startX, startY);
+			startX += 0.07;
+		}
+		
+		startX = 561;
+		for (int i = 0; i < grid_2; i++) {
+			soldier_num.draw(startX, startY);
+			startX -= 18;
+		}
+		
+		//绘制当前领地归属者
+		switch (areas[display_x][display_y].owner.getType()) {
+		case SONG:
+			owner_map[0].draw(World.SCREEN_WIDTH - owner_map[0].getWidth(), 0);
+			break;
+		case LIN:
+			owner_map[1].draw(World.SCREEN_WIDTH - owner_map[1].getWidth(), 0);
+			break;
+		case HU:
+			owner_map[2].draw(World.SCREEN_WIDTH - owner_map[2].getWidth(), 0);
+			break;
+		case LU:
+			owner_map[3].draw(World.SCREEN_WIDTH - owner_map[3].getWidth(), 0);
+			break;
+		default:
+			break;
+		}
+		
+		if (main_game_character.choose_state) {
+			choose_battle.draw();
+		}
+	}
+	
+	//检查自己是否处在别人的城池内
+	public void check(MainCharacter mc) {
+		
+		int i = mc.getI(), j = mc.getJ();
+		if (areas[i][j].owner == null) {
+			areas[i][j].setOwner(mc);
+			mc.choose_state = false;
+		}
+		else if (areas[i][j].owner.getType() != mc.getType()) { //如果是别人的城池
+			mc.choose_state = true;
+			//如果是玩家发起的操作
+			if (mc.getType() == main_game_character.getType()) {
+				mc.battle_mod = choose_battle.input();
+			}
+			//mc.addMoney(-1000);
+		}
+		
 	}
 	
 	/////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	//以下为所有公开到Boot主循环的函数,全部用于与用户交互，故只跟当前场景位置有关
+	
+	public void setAreaOwner(int i, int j, MainCharacter gc) {
+		areas[i][j].setOwner(gc);
+	}
 	//鼠标点击
 	public void setAt(int x, int y, BlockType b) {
 		areas[display_x][display_y].setAt(x, y, b);
@@ -180,5 +277,12 @@ public class SceneManager extends CharacterManager {
 	public void clear() {
 		areas[display_x][display_y].clear();
 	}
+	
+	//获取当前场景
+	public Areas getCurrentArea() {
+		return areas[display_x][display_y];
+	}
+	
+	
 
 }

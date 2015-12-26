@@ -1,37 +1,47 @@
 
-import static org.lwjgl.opengl.GL11.*;
 
 import java.awt.Rectangle;
-import java.io.IOException;
 
-import org.newdawn.slick.opengl.Texture;
-import org.newdawn.slick.opengl.TextureLoader;
+import org.newdawn.slick.Animation;
+import org.newdawn.slick.Image;
 
 
 public class GameCharacter {
 	
+	//角色需要两个状态：运动状态和静止状态
+	protected Animation animation;
+	
+	protected Image image;
+	
 	//碰撞检测用的hitbox
-	private Rectangle hitbox = new Rectangle();
+	protected Rectangle hitbox = new Rectangle();
 	
 	//角色类型
-	private CharacterType type;
+	protected CharacterType type;
 	
 	//运动状态
-	private MoveState isMoving = MoveState.STOP;
+	protected MoveState isMoving = MoveState.STOP;
+	
+	//脸部朝向
+	protected MoveState faceDir = MoveState.RIGHT;
+	
+	//飞出去的动画角度
+	protected float angle = 0;
+	protected float radius = 0;
+	protected float round_x = 0, round_y = 0;
+	
+	//计时器计算死亡
+	protected Timer timer = new Timer();
 	
 	//处于第几个场景中
-	private int i, j;
+	protected int i, j;
 	
 	//处于第x，y个位置处
 	private float x, y;
 	
 	//当前这个角色的目的地
-	private int rand_steps = 0;
+	protected int rand_steps = 0;
 	
-	private Texture texture = null;
-	
-	
-	private byte state = 2;
 	
 	public GameCharacter(CharacterType type, int i, int j, float x, float y) {
 		this.type = type;
@@ -44,32 +54,70 @@ public class GameCharacter {
 		rand_steps = World.RAND.nextInt(10);
 		
 		//load texture
-		try {
-			this.texture = TextureLoader.getTexture("PNG", type.right_file);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		setRight();
 	}
+		
+	public int getWidth() {
+		
+		return animation.getWidth();
+	}
+	
+	public int getHeight() {
+		return animation.getHeight();
+	}
+	
 	
 	public void setLeft() {
 		//load texture
-		try {
-			this.texture = TextureLoader.getTexture("PNG", type.left_file);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		faceDir = MoveState.LEFT;
+		image = type.left_images[0];
+		animation = type.left_animation;
 	}
+	
 	
 	public void setRight() {
 		//load texture
-		try {
-			this.texture = TextureLoader.getTexture("PNG", type.right_file);
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		faceDir = MoveState.RIGHT;
+		image = type.right_images[0];
+		animation = type.right_animation;
+	}
+	
+	//在仍在行走的过程中，将人物置于死地
+	public void setDead() {
+		if (faceDir == MoveState.LEFT) {
+			//moveRight(20);
+			image = type.left_dead[0];
 		}
+		else {
+			//moveLeft(20);
+			image = type.right_dead[0];
+		}	
+		
+		if (angle <= 180) {
+			if (faceDir == MoveState.LEFT)
+				x = round_x + radius - radius * (float)Math.cos(angle);
+			else 
+				x = round_x - radius + radius * (float)Math.cos(angle);
+			
+			y = round_y - radius * (float)Math.sin(angle) - image.getHeight();
+			angle += 15;
+			//开启计时器
+			timer.start();
+		}
+		else {
+			timer.end();
+			if (timer.getTime() >= 5000) {
+				setMoveState(MoveState.DISAPPEAR);
+			}
+		}
+	}
+	
+	//重置飞行角度为0,并设定飞行半径
+	public void resetAngle(int radius) {
+		angle = 0;
+		round_x = x;
+		round_y = y;
+		this.radius = radius;
 	}
 	
 	//判断当前步数是否走完
@@ -117,42 +165,49 @@ public class GameCharacter {
 		return isMoving;
 	}
 	
+	//左右转向函数
+	public void inverseDir() {
+		if (isMoving == MoveState.LEFT) {
+			isMoving = MoveState.RIGHT;
+			setRight();
+		}
+		if (isMoving == MoveState.RIGHT) {
+			isMoving = MoveState.LEFT;
+			setLeft();
+		}
+	}
+	
 	//设置人物的运动状态
 	public void setMoveState(MoveState ms) {
 		this.isMoving = ms;
 	}
 	
-	public void bind() {
-		texture.bind();
-	}
-	
 	public void draw() {
 		
-		if (isMoving == MoveState.LEFT) {
+		switch (isMoving) {
+		case UP:case DOWN:
+			animation.draw(x, y);//运动状态，则动画
+			break;
+		
+		case LEFT:
 			setLeft();
-		}
-		if (isMoving == MoveState.RIGHT) {
+			animation.draw(x, y);//运动状态，则动画
+			break;
+		case RIGHT:
 			setRight();
+			animation.draw(x, y);//运动状态，则动画
+			break;
+		case STOP:
+			image.draw(x, y);//停止状态，则画图
+			break;
+		case DIED:
+			setDead();
+			image.draw(x, y);
+			break;
+		case DISAPPEAR:
+			break;
 		}
 		
-		texture.bind();
-		
-		glLoadIdentity();
-		
-		glTranslated(x, y, 0);
-		
-		glBegin(GL_QUADS);
-			glTexCoord2f(0, 0);
-			glVertex2f(0, 0);
-			glTexCoord2f(1, 0);
-			glVertex2f(World.CHARACTER_SIZE, 0);
-			glTexCoord2f(1, 1);
-			glVertex2f(World.CHARACTER_SIZE, World.CHARACTER_SIZE);
-			glTexCoord2f(0, 1);
-			glVertex2f(0, World.CHARACTER_SIZE);
-		glEnd();
-		
-		glLoadIdentity();
 	}
 	
 	public CharacterType getType() {
@@ -193,7 +248,7 @@ public class GameCharacter {
 	public void moveLeft(int step_len) {
 		if (x - step_len < 0) {
 			if (i - 1 >= 0) {
-				x = World.SCREEN_WIDTH - World.CHARACTER_SIZE - 1;
+				x = World.SCREEN_WIDTH - getWidth() - 1;
 				i--;
 			}
 		}
@@ -203,7 +258,7 @@ public class GameCharacter {
 	}
 	
 	public void moveRight(int step_len) {
-		if (x + step_len + World.CHARACTER_SIZE > World.SCREEN_WIDTH - 1) {
+		if (x + step_len + getWidth() > World.SCREEN_WIDTH - 1) {
 			if (i + 1 < World.SCENE_WIDTH) {
 				x = 0;//右边下一个场景的最左边
 				i++;
@@ -215,9 +270,9 @@ public class GameCharacter {
 	}
 
 	public void moveUp(int step_len) {
-		if (y - step_len < 0) {
+		if (y - step_len < World.SCREEN_HEIGHT / 2) {
 			if (j > 0) {
-				y = World.SCREEN_HEIGHT - World.CHARACTER_SIZE - 1;
+				y = World.SCREEN_HEIGHT - getHeight() - 1;
 				j--;
 			}
 			
@@ -229,9 +284,9 @@ public class GameCharacter {
 	}
 	
 	public void moveDown(int step_len) {
-		if (y + step_len + World.CHARACTER_SIZE > World.SCREEN_HEIGHT - 1) {
+		if (y + step_len + getHeight() > World.SCREEN_HEIGHT - 1) {
 			if (j + 1 < World.SCENE_HEIGHT) {
-				y = 0;
+				y = World.SCREEN_HEIGHT / 2;
 				j++;
 			}
 		}
@@ -240,63 +295,9 @@ public class GameCharacter {
 		}
 	}
 	
-	public void resetState() {
-		state = 0;
-	}
-	
-	
-	public void moveDoubleLeft(int step_len) {
-		if (state == 0) {
-			moveLeft(step_len / 2);
-			moveUp(step_len / 2);
-			state = 1;
-		}
-		else if (state == 1) {
-			moveLeft(step_len / 2);
-			moveUp(step_len / 2);
-			state = 2;
-		}
-		else if (state == 2) {
-			moveLeft(step_len / 2);
-			moveDown(step_len / 2);
-			state = 3;
-		}
-		else if (state == 3) {
-			moveLeft(step_len / 2);
-			moveDown(step_len / 2);
-			state = 0;
-		}
-	}
-	
-	public void moveDoubleRight(int step_len) {
 
-		if (state == 0) {
-			moveRight(step_len / 2);
-			moveUp(step_len / 2);
-			//System.out.println("state0" + x + " " + y); 
-			state = 1;
-		}
-		else if (state == 1) {
-			moveRight(step_len / 2);
-			moveUp(step_len / 2);
-			
-			//System.out.println("state1" + x + " " + y); 
-			state = 2;
-		}
-		else if (state == 2) {
-			moveRight(step_len / 2);
-			moveDown(step_len / 2);
-			state = 3;
-		}
-		else if (state == 3) {
-			moveRight(step_len / 2);
-			moveDown(step_len / 2);
-			state = 0;
-		}
-	}
-	
 	public static enum MoveState {
-		LEFT, RIGHT, UP, DOWN, STOP;
+		LEFT, RIGHT, UP, DOWN, STOP, DIED, DISAPPEAR;
 	}
 	
 	//检测人与人的碰撞
@@ -307,9 +308,38 @@ public class GameCharacter {
 		}
 		
 		//继承Entity类的碰撞检测器
-		hitbox.setBounds((int)this.x, (int)this.y, World.CHARACTER_SIZE, World.CHARACTER_SIZE);
+		hitbox.setBounds((int)this.x, (int)this.y, getWidth(), getHeight());
 		
-		return hitbox.intersects((int)that.x, (int)that.y, World.CHARACTER_SIZE, World.CHARACTER_SIZE);
+		return hitbox.intersects((int)that.x, (int)that.y, that.getWidth(), that.getHeight());
 	}
 	
+	
+	public void move(int len) {
+		switch (isMoving) {
+		case UP:
+			moveUp(len);
+			break;
+		case DOWN:
+			moveDown(len);
+			break;
+		case LEFT:
+			moveLeft(len);
+			break;
+		case RIGHT:
+			moveRight(len);
+			break;
+		case STOP:
+			
+			break;
+		case DIED:
+			
+			break;
+		case DISAPPEAR:
+			break;
+		}
+	}
+	
+	public boolean isAlive() {
+		return isMoving != MoveState.DIED && isMoving != MoveState.DISAPPEAR;
+	}
 }

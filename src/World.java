@@ -18,6 +18,9 @@ public class World {
 	//随机数生成器
 	public static Random RAND = new Random();
 	
+	//世界计时器
+	public static Timer TIMER = new Timer();
+	
 	//场景类型
 	public static String scenery[][] = {
 		{"simple", "city", "city", "city", "shop", "city", "city", "city", "simple", "city"},
