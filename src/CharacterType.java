@@ -3,7 +3,6 @@ import org.newdawn.slick.Animation;
 import org.newdawn.slick.Image;
 import org.newdawn.slick.SlickException;
 
-import net.java.games.input.Component.Identifier.Axis;
 
 public enum CharacterType {
 	SONG("res/song.png", "res/song.png"),
